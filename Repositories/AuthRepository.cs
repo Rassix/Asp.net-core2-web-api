@@ -31,7 +31,6 @@ namespace DatingApp.API.Repositories
         }
 
        
-
         public async Task<User> Register(User user, string password)
         {
             byte[] passwordHash, passwordSalt;
