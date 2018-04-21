@@ -11,14 +11,15 @@ using System;
 namespace DatingApp.API.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20180214184534_extendedUserClass")]
-    partial class extendedUserClass
+    [Migration("20180421115048_mysqlInitialcreate")]
+    partial class mysqlInitialcreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "2.0.1-rtm-125");
+                .HasAnnotation("ProductVersion", "2.0.2-rtm-10011")
+                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
             modelBuilder.Entity("DatingApp.API.Models.Photo", b =>
                 {

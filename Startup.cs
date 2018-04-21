@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Reflection;
 using System.Text;
 using AutoMapper;
 using DatingApp.API.Data;
@@ -13,6 +14,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace DatingApp.API
 {
@@ -30,12 +33,17 @@ namespace DatingApp.API
         {
 
             var key = Encoding.ASCII.GetBytes(Configuration.GetSection("AppSettings:Token").Value);
-            services.AddDbContext<DataContext>(x => x.UseSqlite(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddDbContext<DataContext>(x => x.UseMySql(Configuration.GetConnectionString("DefaultConnection")));
             services.AddTransient<Seed>();
             services.AddMvc().AddJsonOptions(opt =>
                 {
-                    opt.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+                    opt.SerializerSettings.Formatting = Formatting.Indented;
+                    opt.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                 });
+            services.AddSwaggerGen(swagger =>
+            {
+                swagger.SwaggerDoc("v1", new Info {Title = "Dating app web API", Version = "v1"});
+            });
             services.AddCors();
             services.AddAutoMapper();
             services.AddScoped<IAuthRepository, AuthRepository>();
@@ -74,12 +82,17 @@ namespace DatingApp.API
                         });
                 });
             }
-            // seeder.SeedUsers();
+            seeder.SeedUsers();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+            });
             app.UseCors(x => x.AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowAnyOrigin()
                 .AllowCredentials());
             app.UseAuthentication();
+            app.UseSwagger();
 
             // Always use last
             app.UseMvc();

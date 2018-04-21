@@ -15,6 +15,8 @@ using Microsoft.IdentityModel.Tokens;
 namespace DatingApp.API.Controllers
 {
     [Route("api/[controller]")]
+    [Produces("application/json")]
+    [Consumes("application/json")]
     public class AuthController : Controller
     {
         private readonly IAuthRepository _authRepository;
@@ -27,9 +29,11 @@ namespace DatingApp.API.Controllers
         }
 
         [HttpPost("register")]
+        [ProducesResponseType(typeof(String), 201)]
+        [ProducesResponseType(400)]
         public async Task<IActionResult> Register([FromBody]UserForRegisterDto userForRegisterDto)
         {
-            if(!String.IsNullOrEmpty(userForRegisterDto.Username)) 
+            if(!string.IsNullOrEmpty(userForRegisterDto.Username)) 
                 userForRegisterDto.Username = userForRegisterDto.Username.ToLower();
 
             if (await _authRepository.UserExists(userForRegisterDto.Username))
@@ -43,11 +47,13 @@ namespace DatingApp.API.Controllers
                 Username = userForRegisterDto.Username
             };
 
-            var createdUser = await _authRepository.Register(userToCreate, userForRegisterDto.Password);
+            await _authRepository.Register(userToCreate, userForRegisterDto.Password);
             return StatusCode(201);
         }
 
         [HttpPost("login")]
+        [ProducesResponseType(typeof(AuthorizationTokensModel), 200)]
+        [ProducesResponseType(401)]
         public async Task<IActionResult> Login([FromBody]UserForLoginDto userForLogin)
         {
             if (!ModelState.IsValid)
@@ -58,10 +64,9 @@ namespace DatingApp.API.Controllers
             if (user == null)
                 return Unauthorized();
 
-            // generate token
             var tokenHandler = new JwtSecurityTokenHandler();
 
-            //todo: redo to user private key
+            //todo: redo to generate token using private key
             var key = Encoding.ASCII.GetBytes(_configuration.GetSection("AppSettings:Token").Value);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -75,11 +80,11 @@ namespace DatingApp.API.Controllers
             };
 
             var token = tokenHandler.CreateJwtSecurityToken(tokenDescriptor);
-            var accessToken = tokenHandler.WriteToken(token);
 
-            return Ok(new Dictionary<string, string>
+            return Ok(new AuthorizationTokensModel
             {
-                {"access_token", accessToken}
+                AccessToken = tokenHandler.WriteToken(token),
+                ExpiresAt = token.ValidTo
             });
         }
     }
