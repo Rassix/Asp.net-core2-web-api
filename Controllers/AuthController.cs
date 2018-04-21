@@ -53,6 +53,7 @@ namespace DatingApp.API.Controllers
 
         [HttpPost("login")]
         [ProducesResponseType(typeof(AuthorizationTokensModel), 200)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(401)]
         public async Task<IActionResult> Login([FromBody]UserForLoginDto userForLogin)
         {
@@ -60,12 +61,15 @@ namespace DatingApp.API.Controllers
                 return BadRequest(ModelState);
 
             var user = await _authRepository.Authenticate(userForLogin.Username, userForLogin.Password);
-
             if (user == null)
                 return Unauthorized();
 
-            var tokenHandler = new JwtSecurityTokenHandler();
+            return Ok(BuildAccessTokenModel(user));
+        }
 
+        private AuthorizationTokensModel BuildAccessTokenModel(User user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
             //todo: redo to generate token using private key
             var key = Encoding.ASCII.GetBytes(_configuration.GetSection("AppSettings:Token").Value);
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -81,11 +85,11 @@ namespace DatingApp.API.Controllers
 
             var token = tokenHandler.CreateJwtSecurityToken(tokenDescriptor);
 
-            return Ok(new AuthorizationTokensModel
+            return new AuthorizationTokensModel
             {
                 AccessToken = tokenHandler.WriteToken(token),
                 ExpiresAt = token.ValidTo
-            });
+            };
         }
     }
 }
